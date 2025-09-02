@@ -1,0 +1,28 @@
+{
+  "name": "planb-hypercore",
+  "main": "index.js",
+  "pear": {
+    "name": "planb-hypercore",
+    "type": "terminal"
+  },
+  "type": "module",
+  "license": "Apache-2.0",
+  "scripts": {
+    "dev": "pear run -d .",
+    "dev:reader": "pear run --dev . --mode=reader",
+    "dev:writer": "pear run --dev . --mode=writer",
+    "test": "brittle test/*.test.js"
+  },
+  "devDependencies": {
+    "brittle": "^3.0.0",
+    "pear-interface": "^1.0.0"
+  },
+  "dependencies": {
+    "corestore": "^7.4.5",
+    "dotenv": "^17.2.1",
+    "hyperbee": "^2.26.3",
+    "hyperblobs": "^2.8.0",
+    "hypercore-blob-server": "^1.11.0",
+    "hyperswarm": "^4.14.0"
+  }
+}
