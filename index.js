@@ -19,6 +19,7 @@ let blobs;
 let swarm;
 let server;
 let drive;
+let stopping;
 const filename = "video.mp4";
 const { publicKey, secretKey } = createKeyPair();
 
@@ -129,6 +130,13 @@ async function joinSwarm() {
 async function startBlobServer() {
   const server = new BlobServer(store); //new HypercoreBlobServer(blobs);
   server.listen();
+
+  const link = server.getLink(store.key, {
+    type: "video/mp4",
+    filename: "/video.mp4",
+  });
+  console.log("================Blob server link:", link);
+  return server;
 }
 
 function createKeyPair() {
@@ -157,19 +165,19 @@ async function addNewVideoToDrive() {
         "database.txt",
         `${filename},${Buffer.from(JSON.stringify(entry))}\n`
       );
-
-      // PREVIOUS METHOD USING BLOBS DIRECTLY
-      // const blobId = await blobs.put(buffer);
-      // console.log("Blobs put result:", blobId);
-
-      // if (!blobId.byteLength || blobId.byteLength === 0) {
-      //   console.error("==== Error: Blob undefined! Result:", blobId);
-      // }
-
-      // fs.appendFileSync(
-      //   "database.txt",
-      //   `${filename},${Buffer.from(JSON.stringify(blobId))}\n`
-      // );
     }
+  }
+}
+
+process.on("SIGINT", teardown);
+process.on("SIGTERM", teardown);
+async function teardown() {
+  if (!stopping) {
+    console.info("\rGracefully shutting down, press Ctrl+C again to force");
+    stopping = true;
+    swarm.destroy();
+  } else {
+    console.info("\r Forcing shutdown");
+    process.exit(1);
   }
 }
