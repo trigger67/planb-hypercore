@@ -18,14 +18,14 @@
     "pear-interface": "^1.0.0"
   },
   "dependencies": {
-    "binary-stream-equals": "^1.0.0",
+    "b4a": "^1.6.7",
+    "bare-fs": "^4.2.3",
+    "bare-path": "^3.0.0",
+    "bare-process": "^4.2.1",
     "corestore": "^7.4.5",
-    "dotenv": "^17.2.1",
     "hyperblobs": "^2.8.0",
     "hypercore-blob-server": "^1.11.0",
     "hyperdrive": "^13.0.1",
-    "hyperswarm": "^4.14.0",
-    "mirror-drive": "^1.5.1",
-    "same-data": "^1.0.0"
+    "hyperswarm": "^4.14.0"
   }
 }

@@ -5,10 +5,10 @@ import Hyperblobs from "hyperblobs";
 import Hyperswarm from "hyperswarm";
 import Hyperdrive from "hyperdrive";
 
-import path from "path";
-import fs from "fs";
+import path from "bare-path";
+import fs from "bare-fs";
 import b4a from "b4a";
-import process from "process";
+import process from "bare-process";
 import { secretKeyHex } from "./secrets";
 
 let mode;
