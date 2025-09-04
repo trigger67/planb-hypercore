@@ -29,8 +29,7 @@ async function mainProgram() {
   await getCorestore();
   await getHyperDrive();
 
-  blobs = new Hyperblobs(core);
-  addNewVideoToBlobAndDrive();
+  addNewVideoToDrive();
 
   await joinSwarm();
 
@@ -41,6 +40,7 @@ async function mainProgram() {
     core.download();
   });
 
+  blobs = await drive.getBlobs();
   await startBlobServer();
 
   console.log("Blobs feed:", blobs.feed);
@@ -112,7 +112,8 @@ async function getHyperDrive() {
 
 async function joinSwarm() {
   const discoveryKey = core.discoveryKey;
-  console.log("--Drive discoveryKey:", drive.core.discoveryKey.toString("hex"));
+  console.log("--Drive core DK:", drive.core.discoveryKey.toString("hex"));
+  console.log("--Drive discoveryKey:", drive.discoveryKey.toString("hex"));
   console.log("--Core discoveryKey:", discoveryKey.toString("hex"));
   if (discoveryKey && discoveryKey.byteLength === 32) {
     swarm = new Hyperswarm();
@@ -140,7 +141,7 @@ function createKeyPair() {
   };
 }
 
-async function addNewVideoToBlobAndDrive() {
+async function addNewVideoToDrive() {
   if (mode === "writer") {
     const arrayBuffer = await fs.promises.readFile(filename);
     const buffer = b4a.from(arrayBuffer);
