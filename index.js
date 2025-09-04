@@ -128,10 +128,10 @@ async function joinSwarm() {
 }
 
 async function startBlobServer() {
-  const server = new BlobServer(store); //new HypercoreBlobServer(blobs);
+  const server = new BlobServer(store);
   server.listen();
 
-  const link = server.getLink(store.key, {
+  const link = server.getLink(drive.key, {
     type: "video/mp4",
     filename: "/video.mp4",
   });
