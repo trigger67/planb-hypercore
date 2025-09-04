@@ -3,7 +3,7 @@ import Corestore from "corestore";
 import BlobServer from "hypercore-blob-server";
 import Hyperblobs from "hyperblobs";
 import Hyperswarm from "hyperswarm";
-import Hyperbee from "hyperbee";
+import Hyperdrive from "hyperdrive";
 
 import path from "path";
 import fs from "fs";
@@ -18,37 +18,42 @@ let db;
 let blobs;
 let swarm;
 let server;
+let drive;
+const filename = "video.mp4";
+const { publicKey, secretKey } = createKeyPair();
 
 mainProgram();
 
 async function mainProgram() {
   mode = getModeFromArgs();
-  await getHyperCore();
-  await getHyperBeeDb();
+  await getCorestore();
+  await getHyperDrive();
 
   blobs = new Hyperblobs(core);
-  addNewVideoToBlob();
+  addNewVideoToBlobAndDrive();
 
   await joinSwarm();
 
   swarm.on("connection", (conn) => {
     console.log("======= SWARM CONNECTED");
     store.replicate(conn);
-    db.replicate(conn);
+    drive.replicate(conn);
     core.download();
   });
 
   await startBlobServer();
 
-  console.log("Feed:", blobs.feed);
+  console.log("Blobs feed:", blobs.feed);
 
   setInterval(async () => {
     console.log("=== All files:");
     core.download(); // Or not ?
-    for await (const { key, value } of db.createReadStream()) {
-      console.log("File:", key, "→ BlobId:", value);
-    }
-  }, 30000);
+    const download = drive.download("/");
+    await download.done();
+
+    const entry = await drive.entry("/" + filename);
+    console.log("entry:", entry);
+  }, 10000);
 }
 
 ////////////////////////////////////////
@@ -68,10 +73,9 @@ function getModeFromArgs() {
   return mode;
 }
 
-async function getHyperCore() {
+async function getCorestore() {
   store = new Corestore(path.join(mode, "storage")); //(path.join(Pear.config.storage, "storage"));
   await store.ready();
-  const { publicKey, secretKey } = createKeyPair();
 
   if (mode === "writer") {
     core = store.get({
@@ -90,15 +94,26 @@ async function getHyperCore() {
   console.log("Core key", core.key.toString("hex"));
 }
 
-async function getHyperBeeDb() {
-  db = new Hyperbee(store.get({ name: "index" }), {
-    keyEncoding: "utf-8",
-    valueEncoding: "json",
-  });
+async function getHyperDrive() {
+  // Needs to be changes when db is removed
+  const driveKeyHex =
+    "1fe22d00087fd4f65b959dc745d83a08b8cbe7a4381524f4bfb58535f90175f7";
+
+  if (mode === "writer") {
+    drive = new Hyperdrive(store);
+  }
+  if (mode === "reader") {
+    drive = new Hyperdrive(store, b4a.from(driveKeyHex, "hex"));
+  }
+
+  await drive.ready();
+  console.log("Drive:", drive.core);
 }
 
 async function joinSwarm() {
   const discoveryKey = core.discoveryKey;
+  console.log("--Drive discoveryKey:", drive.core.discoveryKey.toString("hex"));
+  console.log("--Core discoveryKey:", discoveryKey.toString("hex"));
   if (discoveryKey && discoveryKey.byteLength === 32) {
     swarm = new Hyperswarm();
     console.log("Joining swarm...");
@@ -125,22 +140,35 @@ function createKeyPair() {
   };
 }
 
-async function addNewVideoToBlob() {
+async function addNewVideoToBlobAndDrive() {
   if (mode === "writer") {
-    const filename = "video.mp4";
     const arrayBuffer = await fs.promises.readFile(filename);
     const buffer = b4a.from(arrayBuffer);
 
-    const blobId = await blobs.put(buffer);
-    await db.put(filename, { blobId: JSON.stringify(blobId) });
+    const entry = await drive.entry("/" + filename);
+    console.log("---Drive entry for", filename, ":", entry);
+    if (entry == null) {
+      console.log("Adding file", filename, "to drive...");
+      await drive.put("/" + filename, buffer);
+      const entry = await drive.entry("/" + filename);
 
-    if (!blobId.byteLength || blobId.byteLength === 0) {
-      console.error("==== Error: Blob undefined! Result:", blobId);
+      fs.appendFileSync(
+        "database.txt",
+        `${filename},${Buffer.from(JSON.stringify(entry))}\n`
+      );
+
+      // PREVIOUS METHOD USING BLOBS DIRECTLY
+      // const blobId = await blobs.put(buffer);
+      // console.log("Blobs put result:", blobId);
+
+      // if (!blobId.byteLength || blobId.byteLength === 0) {
+      //   console.error("==== Error: Blob undefined! Result:", blobId);
+      // }
+
+      // fs.appendFileSync(
+      //   "database.txt",
+      //   `${filename},${Buffer.from(JSON.stringify(blobId))}\n`
+      // );
     }
-
-    fs.appendFileSync(
-      "database.txt",
-      `${filename},${Buffer.from(JSON.stringify(blobId))}\n`
-    );
   }
 }
